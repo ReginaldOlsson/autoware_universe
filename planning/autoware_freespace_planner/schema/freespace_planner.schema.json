@@ -8,9 +8,9 @@
       "properties": {
         "planning_algorithm": {
           "type": "string",
-          "enum": ["astar", "rrtstar"],
+          "enum": ["astar", "astar_cuda", "rrtstar"],
           "default": "astar",
-          "description": "Planning algorithm to use, options: astar, rrtstar."
+          "description": "Planning algorithm to use, options: astar, astar_cuda, rrtstar."
         },
         "waypoints_velocity": {
           "type": "number",

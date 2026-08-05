@@ -34,6 +34,9 @@
 #include "autoware_utils/ros/logger_level_configure.hpp"
 
 #include <autoware/freespace_planning_algorithms/astar_search.hpp>
+#if defined(AUTOWARE_CUDA_ENABLED)
+#include <autoware/freespace_planning_algorithms/astar_search_cuda.hpp>
+#endif
 #include <autoware/freespace_planning_algorithms/rrtstar.hpp>
 #include <autoware/route_handler/route_handler.hpp>
 #include <autoware_utils/ros/polling_subscriber.hpp>

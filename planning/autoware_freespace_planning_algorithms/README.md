@@ -7,6 +7,7 @@ This package is for development of path planning algorithms in free space.
 ### Implemented algorithms
 
 - Hybrid A\* and RRT\* (includes RRT and informed RRT\*)
+- Optional CUDA Hybrid A\* (`AstarSearchCuda`) — see [docs/astar_cuda/README.md](docs/astar_cuda/README.md)
 
 Please see [rrtstar.md](rrtstar.md) for a note on the implementation for informed-RRT\*.
 

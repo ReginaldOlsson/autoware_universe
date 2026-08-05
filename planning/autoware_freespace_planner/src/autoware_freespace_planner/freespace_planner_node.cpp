@@ -452,6 +452,17 @@ void FreespacePlannerNode::initializePlanningAlgorithm()
   // initialize specified algorithm
   if (algo_name == "astar") {
     algo_ = std::make_unique<AstarSearch>(planner_common_param, extended_vehicle_shape, *this);
+#if defined(AUTOWARE_CUDA_ENABLED)
+  } else if (algo_name == "astar_cuda") {
+    if (!autoware::freespace_planning_algorithms::AstarSearchCuda::isCudaAvailable()) {
+      RCLCPP_WARN(
+        get_logger(), "astar_cuda requested but no CUDA device found; falling back to astar");
+      algo_ = std::make_unique<AstarSearch>(planner_common_param, extended_vehicle_shape, *this);
+    } else {
+      algo_ = std::make_unique<autoware::freespace_planning_algorithms::AstarSearchCuda>(
+        planner_common_param, extended_vehicle_shape, *this);
+    }
+#endif
   } else if (algo_name == "rrtstar") {
     algo_ = std::make_unique<RRTStar>(planner_common_param, extended_vehicle_shape, *this);
   } else {

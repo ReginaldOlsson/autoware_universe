@@ -3,9 +3,10 @@
 ## freespace_planner_node
 
 `freespace_planner_node` is a global path planner node that plans trajectory
-in the space having static/dynamic obstacles. This node is currently based on
-Hybrid A\* search algorithm in `freespace_planning_algorithms` package.
-Other algorithms such as rrt\* will be also added and selectable in the future.
+in the space having static/dynamic obstacles. This node is based on
+Hybrid A\* / RRT\* in `freespace_planning_algorithms`. When built with CUDA,
+`planning_algorithm: "astar_cuda"` selects the GPU Hybrid A\* backend
+(see `autoware_freespace_planning_algorithms/docs/astar_cuda/README.md`).
 
 **Note**
 Due to the constraint of trajectory following, the output trajectory will be split to include only the single direction path.
