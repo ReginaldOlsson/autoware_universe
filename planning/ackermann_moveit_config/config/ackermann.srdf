@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot name="ackermann_vehicle">
+
+  <virtual_joint name="vehicle_joint" type="planar"
+                 parent_frame="map" child_link="base_link"/>
+
+  <group name="vehicle">
+    <joint name="vehicle_joint"/>
+  </group>
+
+</robot>

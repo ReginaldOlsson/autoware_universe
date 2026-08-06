@@ -1,0 +1,9 @@
+<library path="ackermann_ompl_plugins">
+  <class name="ackermann_ompl_plugins/ReedsSheppPlannerManager"
+         type="ackermann_ompl_plugins::ReedsSheppPlannerManager"
+         base_class_type="planning_interface::PlannerManager">
+    <description>
+      Reeds-Shepp geometric planner for Ackermann vehicles using OMPL.
+    </description>
+  </class>
+</library>

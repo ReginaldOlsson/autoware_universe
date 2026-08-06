@@ -1,0 +1,39 @@
+/**:
+  ros__parameters:
+    # -- Node Configurations --
+    planning_algorithm: "moveit_reeds_shepp"
+    waypoints_velocity: 5.0          # [km/h] constant speed; sign comes from is_back
+    update_rate: 10.0
+    th_arrived_distance_m: 0.5
+    th_stopped_time_sec: 1.0
+    th_stopped_velocity_mps: 0.01
+    th_course_out_distance_m: 1.0
+    th_obstacle_time_sec: 1.0
+    vehicle_shape_margin_m: 0.3
+    replan_when_obstacle_found: true
+    replan_when_course_out: true
+
+    # -- Shared Autoware planner params (goal tolerances used by OMPL goal region) --
+    time_limit: 5000.0               # [ms] upper bound; also capped by moveit.max_planning_time
+    max_turning_ratio: 0.95
+    turning_steps: 10
+    theta_size: 120
+    angle_goal_range: 10.0           # [deg]
+    lateral_goal_range: 0.5          # [m]
+    longitudinal_goal_range: 1.0     # [m]
+    curve_weight: 0.5
+    reverse_weight: 0.7
+    direction_change_weight: 0.0
+    obstacle_threshold: 100
+
+    # -- MoveIt / OMPL Ackermann --
+    moveit:
+      planner_id: "RRTConnect"       # RRTConnect (fast around obstacles) | RRTstar | PRM
+      turning_radius: -1.0           # <0 => wheelbase / tan(max_steer)
+      max_planning_time: 5.0         # [s] used when obstacles block analytic RS
+      try_analytic_reeds_shepp: true # try collision-free RS connect before sampling
+      planner_range: 5.0             # smaller helps in cluttered parking
+      longest_valid_segment_fraction: 0.05
+      interpolate_resolution: 0.5    # [m] densify output by distance
+      interpolate_count: 0           # 0 => use interpolate_resolution
+      simplify: true

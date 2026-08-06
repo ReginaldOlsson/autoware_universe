@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ackermann_vehicle">
+
+  <link name="world"/>
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="4.5 1.8 1.5"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0.2 0.5 0.8 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="4.5 1.8 1.5"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Fixed attachment; SE(2) motion is modeled via SRDF virtual planar joint -->
+  <joint name="world_to_base" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+</robot>

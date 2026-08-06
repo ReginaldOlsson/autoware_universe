@@ -1,0 +1,8 @@
+geometry_msgs/PoseStamped start_pose
+geometry_msgs/PoseStamped goal_pose
+string planner_id
+float64 allowed_planning_time
+---
+nav_msgs/Path path
+bool success
+string message

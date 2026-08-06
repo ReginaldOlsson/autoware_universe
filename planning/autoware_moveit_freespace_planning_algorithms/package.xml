@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>autoware_moveit_freespace_planning_algorithms</name>
+  <version>0.0.1</version>
+  <description>
+    AbstractPlanningAlgorithm backend using OMPL Reeds-Shepp / Ackermann state space
+    for Autoware freespace planning (makePlan API).
+  </description>
+  <maintainer email="mosal@todo.todo">mosal</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  <buildtool_depend>autoware_cmake</buildtool_depend>
+
+  <depend>ackermann_ompl_plugins</depend>
+  <depend>autoware_freespace_planning_algorithms</depend>
+  <depend>autoware_vehicle_info_utils</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>rclcpp</depend>
+  <depend>tf2</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

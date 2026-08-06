@@ -1,0 +1,7 @@
+/**:
+  ros__parameters:
+    wheelbase: 2.7
+    max_steering_angle: 0.52
+    turning_radius: 6.0
+    vehicle_width: 1.8
+    vehicle_length: 4.5
