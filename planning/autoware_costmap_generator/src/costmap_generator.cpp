@@ -51,6 +51,7 @@
 #include <autoware_lanelet2_extension/utility/utilities.hpp>
 #include <autoware_lanelet2_extension/visualization/visualization.hpp>
 #include <pcl_ros/transforms.hpp>
+#include <pcl_conversions/pcl_conversions.h>
 #include <rclcpp/clock.hpp>
 #include <rclcpp/logging.hpp>
 #include <tf2/time.hpp>
@@ -128,6 +129,17 @@ pcl::PointCloud<pcl::PointXYZ> getTransformedPointCloud(
   const sensor_msgs::msg::PointCloud2 & pointcloud_msg,
   const geometry_msgs::msg::Transform & transform)
 {
+  // Empty clouds are valid (no obstacles). Skip PCL conversion to avoid
+  // "[pcl::fromPCLPointCloud2] No data to copy." spam from PCL_WARN.
+  if (pointcloud_msg.width * pointcloud_msg.height == 0) {
+    pcl::PointCloud<pcl::PointXYZ> empty_cloud;
+    empty_cloud.header = pcl_conversions::toPCL(pointcloud_msg.header);
+    empty_cloud.width = 0;
+    empty_cloud.height = 0;
+    empty_cloud.is_dense = true;
+    return empty_cloud;
+  }
+
   const Eigen::Matrix4f transform_matrix = tf2::transformToEigen(transform).matrix().cast<float>();
 
   sensor_msgs::msg::PointCloud2 transformed_msg;

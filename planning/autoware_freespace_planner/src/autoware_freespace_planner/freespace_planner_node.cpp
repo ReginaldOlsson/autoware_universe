@@ -396,7 +396,7 @@ void FreespacePlannerNode::planTrajectory()
   }
   const rclcpp::Time end = get_clock()->now();
 
-  RCLCPP_DEBUG(get_logger(), "Freespace planning: %f [s]", (end - start).seconds());
+  RCLCPP_INFO(get_logger(), "Freespace planning: %f [s]", (end - start).seconds());
 
   if (result) {
     RCLCPP_DEBUG(get_logger(), "Found goal!");

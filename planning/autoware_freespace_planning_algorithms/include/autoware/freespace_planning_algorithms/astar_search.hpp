@@ -28,6 +28,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <queue>
 #include <string>
 #include <tuple>
@@ -89,6 +90,20 @@ struct AstarNode
 struct NodeComparison
 {
   bool operator()(const AstarNode * lhs, const AstarNode * rhs) const { return lhs->fc > rhs->fc; }
+};
+
+struct ExpansionCandidate
+{
+  AstarNode * node = nullptr;
+  Pose pose{};
+  double move_cost = 0.0;
+  double total_cost = std::numeric_limits<double>::max();
+  int steering_index = 0;
+  bool is_back = false;
+  double dir_distance = 0.0;
+  double dist_to_goal = 0.0;
+  double dist_to_obs = 0.0;
+  AstarNode * parent = nullptr;
 };
 
 class AstarSearch : public AbstractPlanningAlgorithm

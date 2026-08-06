@@ -66,6 +66,7 @@ if(TRT_AVAIL AND CUDA_AVAIL AND SPCONV_AVAIL)
   find_package(TENSORRT)
   if(TENSORRT_VERSION VERSION_LESS 10.0)
     message(WARNING "Unsupported version TensorRT ${TENSORRT_VERSION} detected. This package requires TensorRT 10.0 or later.")
+    ament_auto_package()
     return()
   endif()
 
@@ -182,6 +183,8 @@ if(TRT_AVAIL AND CUDA_AVAIL AND SPCONV_AVAIL)
 
   ament_auto_package()
 else()
+  # TensorRT / CUDA / spconv missing: still register so install/setup.bash stays valid
   find_package(ament_cmake_auto REQUIRED)
   ament_auto_find_build_dependencies()
+  ament_auto_package()
 endif()

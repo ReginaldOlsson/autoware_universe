@@ -15,6 +15,8 @@ find_package(OpenCV REQUIRED)
 
 if(NOT (${CUDA_FOUND} AND ${TENSORRT_FOUND}))
   message(WARNING "cuda, tensorrt libraries are not found")
+  # Still register the package so colcon install/setup.bash does not reference missing local_setup.*
+  ament_auto_package()
   return()
 endif()
 

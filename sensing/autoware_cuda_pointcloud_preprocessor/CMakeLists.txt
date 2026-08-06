@@ -48,6 +48,12 @@ include_directories(
     ${CUDA_INCLUDE_DIRS}
 )
 
+# CUDA 13+ ships CCCL under include/cccl/ (nvcc adds this automatically; host g++ does not).
+# Headers such as <cuda/std/optional> live there and are included from .cpp node sources.
+if(EXISTS "${CUDA_INCLUDE_DIRS}/cccl")
+  include_directories(SYSTEM ${CUDA_INCLUDE_DIRS}/cccl)
+endif()
+
 # cSpell: ignore expt
 list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr -diag-suppress 20012")
 list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_75,code=sm_75")
