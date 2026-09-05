@@ -2,14 +2,14 @@
   ros__parameters:
     # -- Node Configurations --
     planning_algorithm: "moveit_reeds_shepp"
-    waypoints_velocity: 5.0          # [km/h] constant speed; sign comes from is_back
+    waypoints_velocity: 2.0          # [km/h] constant speed; sign comes from is_back
     update_rate: 10.0
-    th_arrived_distance_m: 0.5
+    th_arrived_distance_m: 0.1
     th_stopped_time_sec: 1.0
     th_stopped_velocity_mps: 0.01
-    th_course_out_distance_m: 1.0
+    th_course_out_distance_m: 0.5
     th_obstacle_time_sec: 1.0
-    vehicle_shape_margin_m: 0.3
+    vehicle_shape_margin_m: 0.5      # match legacy Hybrid A*; 0.01 clips object footprints
     replan_when_obstacle_found: true
     replan_when_course_out: true
 
@@ -18,22 +18,23 @@
     max_turning_ratio: 0.95
     turning_steps: 10
     theta_size: 120
-    angle_goal_range: 10.0           # [deg]
-    lateral_goal_range: 0.5          # [m]
-    longitudinal_goal_range: 1.0     # [m]
+    angle_goal_range: 1.0           # [deg]
+    lateral_goal_range: 0.05        # [m]
+    longitudinal_goal_range: 0.05     # [m]
     curve_weight: 0.5
     reverse_weight: 0.7
     direction_change_weight: 0.0
-    obstacle_threshold: 100
+    obstacle_threshold: 50           # object cells can be <100 after GridMap->OccupancyGrid
 
     # -- MoveIt / OMPL Ackermann --
     moveit:
       planner_id: "RRTConnect"       # RRTConnect (fast around obstacles) | RRTstar | PRM
       turning_radius: -1.0           # <0 => wheelbase / tan(max_steer)
       max_planning_time: 5.0         # [s] used when obstacles block analytic RS
-      try_analytic_reeds_shepp: true # try collision-free RS connect before sampling
+      try_analytic_reeds_shepp: false # try collision-free RS connect before sampling
       planner_range: 5.0             # smaller helps in cluttered parking
-      longest_valid_segment_fraction: 0.05
-      interpolate_resolution: 0.5    # [m] densify output by distance
+      valid_segment_length: 0.3      # [m] motion collision-check step (costmap resolution)
+      longest_valid_segment_fraction: 0.05  # fallback if valid_segment_length <= 0
+      interpolate_resolution: 0.3    # [m] densify output by distance
       interpolate_count: 0           # 0 => use interpolate_resolution
       simplify: true

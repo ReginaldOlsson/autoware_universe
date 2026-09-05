@@ -23,6 +23,9 @@ struct OmplSolveRequest
   double allowed_planning_time{2.0};
   double turning_radius{6.0};
   double longest_valid_segment_fraction{0.05};
+  /// Collision-check spacing along Reeds-Shepp motions [m]. When > 0, overrides
+  /// longest_valid_segment_fraction using state-space maximum extent.
+  double valid_segment_length{-1.0};
   /// Target spacing [m] when densifying the path (preferred over fixed count).
   double interpolate_resolution{0.5};
   int interpolate_count{0};  // 0 => use interpolate_resolution

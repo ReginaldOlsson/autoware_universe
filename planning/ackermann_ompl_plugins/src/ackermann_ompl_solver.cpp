@@ -1,6 +1,7 @@
 #include "ackermann_ompl_plugins/ackermann_ompl_solver.hpp"
 #include "ackermann_ompl_plugins/ackermann_state_space.hpp"
 
+#include <ompl/base/MotionValidator.h>
 #include <ompl/base/ScopedState.h>
 #include <ompl/base/SpaceInformation.h>
 #include <ompl/base/goals/GoalSampleableRegion.h>
@@ -102,52 +103,18 @@ void assignReverseFlags(std::vector<OmplWaypoint> & waypoints)
     return;
   }
 
-  // Signed motion relative to heading for each edge.
-  std::vector<int> edge_dir(waypoints.size() - 1, 1);
-  std::vector<double> edge_len(waypoints.size() - 1, 0.0);
+  // Signed motion relative to heading for each edge. Keep the real gear so
+  // partial splits see +v/-v changes at cusps (do not absorb short runs).
   for (size_t i = 0; i + 1 < waypoints.size(); ++i) {
     const double yaw = tf2::getYaw(waypoints[i].pose.orientation);
     const double dx = waypoints[i + 1].pose.position.x - waypoints[i].pose.position.x;
     const double dy = waypoints[i + 1].pose.position.y - waypoints[i].pose.position.y;
-    edge_len[i] = std::hypot(dx, dy);
-    if (edge_len[i] < 1e-4) {
-      edge_dir[i] = (i > 0) ? edge_dir[i - 1] : 1;
+    if (std::hypot(dx, dy) < 1e-4) {
+      waypoints[i].is_back = (i > 0) ? waypoints[i - 1].is_back : false;
       continue;
     }
     const double forward_dot = std::cos(yaw) * dx + std::sin(yaw) * dy;
-    edge_dir[i] = (forward_dot >= 0.0) ? 1 : -1;
-  }
-
-  // Merge short opposite runs so tiny Reeds-Shepp cusps / interpolation noise
-  // do not create fake reverse partials (velocity artifacts).
-  constexpr double k_min_segment_length = 0.6;  // [m]
-  size_t run_start = 0;
-  while (run_start < edge_dir.size()) {
-    size_t run_end = run_start + 1;
-    while (run_end < edge_dir.size() && edge_dir[run_end] == edge_dir[run_start]) {
-      ++run_end;
-    }
-    double run_length = 0.0;
-    for (size_t i = run_start; i < run_end; ++i) {
-      run_length += edge_len[i];
-    }
-    if (run_length < k_min_segment_length && run_start > 0) {
-      const int absorb = edge_dir[run_start - 1];
-      for (size_t i = run_start; i < run_end; ++i) {
-        edge_dir[i] = absorb;
-      }
-    } else if (run_length < k_min_segment_length && run_end < edge_dir.size()) {
-      const int absorb = edge_dir[run_end];
-      for (size_t i = run_start; i < run_end; ++i) {
-        edge_dir[i] = absorb;
-      }
-    }
-    run_start = run_end;
-  }
-
-  // Point i inherits direction of outgoing edge; last point keeps previous.
-  for (size_t i = 0; i + 1 < waypoints.size(); ++i) {
-    waypoints[i].is_back = edge_dir[i] < 0;
+    waypoints[i].is_back = forward_dot < 0.0;
   }
   waypoints.back().is_back = waypoints[waypoints.size() - 2].is_back;
 }
@@ -187,6 +154,143 @@ void densifyPath(og::PathGeometric & path, const OmplSolveRequest & request)
   path.interpolate(std::max(2u, count));
 }
 
+double motionCheckStep(const OmplSolveRequest & request)
+{
+  return request.valid_segment_length > 0.0 ? request.valid_segment_length : 0.3;
+}
+
+double validityCheckingFraction(const OmplSolveRequest & request, const ob::StateSpacePtr & space)
+{
+  const double step = motionCheckStep(request);
+  const double extent = space->getMaximumExtent();
+  if (extent > 0.0) {
+    return std::clamp(step / extent, 1e-4, 0.2);
+  }
+  return std::clamp(request.longest_valid_segment_fraction, 1e-4, 0.2);
+}
+
+/// Collision-check Reeds-Shepp motions every `step_m` meters of path length.
+/// Does not depend on OMPL's fraction-of-extent DiscreteMotionValidator.
+class MetricMotionValidator : public ob::MotionValidator
+{
+public:
+  MetricMotionValidator(const ob::SpaceInformationPtr & si, double step_m)
+  : MotionValidator(si), step_m_(std::max(1e-3, step_m))
+  {
+  }
+
+  bool checkMotion(const ob::State * s1, const ob::State * s2) const override
+  {
+    if (!si_->isValid(s2)) {
+      return false;
+    }
+    const double dist = si_->distance(s1, s2);
+    const int nd = std::max(1, static_cast<int>(std::ceil(dist / step_m_)));
+    auto * tmp = si_->allocState();
+    bool valid = true;
+    for (int i = 1; i < nd && valid; ++i) {
+      si_->getStateSpace()->interpolate(s1, s2, static_cast<double>(i) / static_cast<double>(nd), tmp);
+      valid = si_->isValid(tmp);
+    }
+    si_->freeState(tmp);
+    return valid;
+  }
+
+  bool checkMotion(
+    const ob::State * s1, const ob::State * s2, std::pair<ob::State *, double> & last_valid) const
+    override
+  {
+    const double dist = si_->distance(s1, s2);
+    const int nd = std::max(1, static_cast<int>(std::ceil(dist / step_m_)));
+    auto * tmp = si_->allocState();
+    bool valid = true;
+    int last_ok = 0;
+    for (int i = 1; i <= nd; ++i) {
+      const double t = static_cast<double>(i) / static_cast<double>(nd);
+      si_->getStateSpace()->interpolate(s1, s2, t, tmp);
+      if (!si_->isValid(tmp)) {
+        valid = false;
+        break;
+      }
+      last_ok = i;
+    }
+    if (last_valid.first != nullptr && last_ok > 0) {
+      const double t = static_cast<double>(last_ok) / static_cast<double>(nd);
+      si_->getStateSpace()->interpolate(s1, s2, t, last_valid.first);
+      last_valid.second = t;
+    }
+    si_->freeState(tmp);
+    return valid;
+  }
+
+private:
+  double step_m_;
+};
+
+bool poseCollides(const geometry_msgs::msg::Pose & pose, const StateValidityFn & is_valid)
+{
+  return !is_valid(pose.position.x, pose.position.y, tf2::getYaw(pose.orientation));
+}
+
+bool waypointsCollide(
+  const std::vector<OmplWaypoint> & waypoints, const StateValidityFn & is_valid, double step_m)
+{
+  if (waypoints.empty()) {
+    return false;
+  }
+  const double step = std::max(1e-3, step_m);
+  for (size_t i = 0; i < waypoints.size(); ++i) {
+    if (poseCollides(waypoints[i].pose, is_valid)) {
+      return true;
+    }
+    if (i + 1 >= waypoints.size()) {
+      continue;
+    }
+    const auto & a = waypoints[i].pose.position;
+    const auto & b = waypoints[i + 1].pose.position;
+    const double dx = b.x - a.x;
+    const double dy = b.y - a.y;
+    const double dist = std::hypot(dx, dy);
+    const int n = std::max(1, static_cast<int>(std::ceil(dist / step)));
+    const double yaw0 = tf2::getYaw(waypoints[i].pose.orientation);
+    const double yaw1 = tf2::getYaw(waypoints[i + 1].pose.orientation);
+    const double dyaw = normalizeAngle(yaw1 - yaw0);
+    for (int k = 1; k < n; ++k) {
+      const double t = static_cast<double>(k) / static_cast<double>(n);
+      geometry_msgs::msg::Pose mid;
+      mid.position.x = a.x + t * dx;
+      mid.position.y = a.y + t * dy;
+      mid.orientation = yawToQuat(yaw0 + t * dyaw);
+      if (poseCollides(mid, is_valid)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool finalizePath(
+  og::PathGeometric & path, const OmplSolveRequest & request, const StateValidityFn & is_valid,
+  OmplSolveResult & result, const std::string & success_message)
+{
+  densifyPath(path, request);
+  result.waypoints = pathToWaypoints(path);
+  if (result.waypoints.size() < 2) {
+    result.success = false;
+    result.message = "Empty path";
+    return false;
+  }
+  if (waypointsCollide(result.waypoints, is_valid, motionCheckStep(request))) {
+    result.success = false;
+    result.waypoints.clear();
+    result.message = "Path intersects costmap obstacles";
+    return false;
+  }
+  result.success = true;
+  result.message = success_message;
+  return true;
+}
+
 }  // namespace
 
 OmplSolveResult AckermannOmplSolver::solve(
@@ -213,9 +317,9 @@ OmplSolveResult AckermannOmplSolver::solve(
     const auto * se2 = state->as<ob::SE2StateSpace::StateType>();
     return is_valid(se2->getX(), se2->getY(), se2->getYaw());
   });
-  // Coarser than 0.01: Reeds-Shepp motion checks are otherwise very expensive.
-  si->setStateValidityCheckingResolution(
-    std::clamp(request.longest_valid_segment_fraction, 0.01, 0.2));
+  const double step_m = motionCheckStep(request);
+  si->setStateValidityCheckingResolution(validityCheckingFraction(request, space));
+  si->setMotionValidator(std::make_shared<MetricMotionValidator>(si, step_m));
   si->setup();
 
   const double start_yaw = tf2::getYaw(request.start_pose.orientation);
@@ -251,10 +355,7 @@ OmplSolveResult AckermannOmplSolver::solve(
     request.try_analytic_reeds_shepp && si->checkMotion(start.get(), goal.get());
   if (analytic_ok) {
     og::PathGeometric path(si, start.get(), goal.get());
-    densifyPath(path, request);
-    result.waypoints = pathToWaypoints(path);
-    result.success = result.waypoints.size() >= 2;
-    result.message = result.success ? "Analytic Reeds-Shepp" : "Empty analytic path";
+    finalizePath(path, request, is_valid, result, "Analytic Reeds-Shepp");
     return result;
   }
 
@@ -290,10 +391,7 @@ OmplSolveResult AckermannOmplSolver::solve(
     simplifier.simplify(path, simplify_time);
   }
 
-  densifyPath(path, request);
-  result.waypoints = pathToWaypoints(path);
-  result.success = result.waypoints.size() >= 2;
-  result.message = result.success ? "Success" : "Empty path";
+  finalizePath(path, request, is_valid, result, "Success");
   return result;
 }
 

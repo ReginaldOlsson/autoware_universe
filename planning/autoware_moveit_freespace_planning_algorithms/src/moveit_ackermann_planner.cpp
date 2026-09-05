@@ -56,6 +56,7 @@ MoveItAckermannPlanner::MoveItAckermannPlanner(
       p.turning_radius = node.declare_parameter<double>("moveit.turning_radius", -1.0);
       p.longest_valid_segment_fraction =
         node.declare_parameter<double>("moveit.longest_valid_segment_fraction", 0.05);
+      p.valid_segment_length = node.declare_parameter<double>("moveit.valid_segment_length", -1.0);
       p.interpolate_resolution =
         node.declare_parameter<double>("moveit.interpolate_resolution", 0.5);
       p.interpolate_count =
@@ -103,6 +104,9 @@ bool MoveItAckermannPlanner::makePlan(
   req.allowed_planning_time = std::min(from_common, moveit_param_.max_planning_time);
   req.turning_radius = moveit_param_.turning_radius;
   req.longest_valid_segment_fraction = moveit_param_.longest_valid_segment_fraction;
+  req.valid_segment_length = moveit_param_.valid_segment_length > 0.0
+                               ? moveit_param_.valid_segment_length
+                               : costmap_.info.resolution;
   req.interpolate_resolution = moveit_param_.interpolate_resolution;
   req.interpolate_count = moveit_param_.interpolate_count;
   req.simplify = moveit_param_.simplify;
@@ -117,6 +121,18 @@ bool MoveItAckermannPlanner::makePlan(
   req.bounds_low_y = 0.0;
   req.bounds_high_x = static_cast<double>(costmap_.info.width) * res;
   req.bounds_high_y = static_cast<double>(costmap_.info.height) * res;
+
+  int obstacle_cells = 0;
+  for (const auto cost : costmap_.data) {
+    if (cost < 0 || cost >= planner_common_param_.obstacle_threshold) {
+      ++obstacle_cells;
+    }
+  }
+  RCLCPP_INFO_THROTTLE(
+    rclcpp::get_logger("MoveItAckermannPlanner"), *clock_, 2000,
+    "Costmap %ux%u res=%.2f obstacle_cells=%d/%zu threshold=%d valid_segment=%.2fm",
+    costmap_.info.width, costmap_.info.height, res, obstacle_cells, costmap_.data.size(),
+    planner_common_param_.obstacle_threshold, req.valid_segment_length);
 
   const auto is_valid = [this](double x, double y, double yaw) {
     geometry_msgs::msg::Pose pose;
@@ -141,6 +157,20 @@ bool MoveItAckermannPlanner::makePlan(
       RCLCPP_WARN_THROTTLE(
         rclcpp::get_logger("MoveItAckermannPlanner"), *clock_, 2000,
         "Planning failed: %s", solved.message.c_str());
+      continue;
+    }
+
+    bool path_collides = false;
+    for (const auto & wp : solved.waypoints) {
+      if (detectCollision(wp.pose)) {
+        path_collides = true;
+        break;
+      }
+    }
+    if (path_collides) {
+      RCLCPP_WARN_THROTTLE(
+        rclcpp::get_logger("MoveItAckermannPlanner"), *clock_, 2000,
+        "Rejecting path that intersects costmap obstacles");
       continue;
     }
 

@@ -33,6 +33,8 @@ struct MoveItAckermannParam
   std::string planner_id{"RRTConnect"};
   double turning_radius{-1.0};
   double longest_valid_segment_fraction{0.05};
+  /// Collision-check spacing [m]. <=0 uses costmap resolution.
+  double valid_segment_length{-1.0};
   double interpolate_resolution{0.5};
   int interpolate_count{0};
   bool simplify{true};
