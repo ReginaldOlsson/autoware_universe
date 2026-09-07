@@ -1,0 +1,7 @@
+<library path="autoware_parking_spot_rviz_plugin">
+  <class
+    type="autoware::parking_spot_rviz_plugin::ParkingSpotPanel"
+    base_class_type="rviz_common::Panel">
+    <description>Search named parking spots from the Lanelet2 map and publish a goal pose.</description>
+  </class>
+</library>

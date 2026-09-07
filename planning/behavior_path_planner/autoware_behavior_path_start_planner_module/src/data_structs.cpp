@@ -204,6 +204,27 @@ StartPlannerParameters StartPlannerParameters::init(rclcpp::Node & node)
     p.freespace_planner_common_parameters.longitudinal_goal_range =
       get_or_declare_parameter<double>(node, ns + "longitudinal_goal_range");
   }
+
+  {
+    //
+    p.freespace_planner_common_parameters.grid_resolution =
+      get_or_declare_parameter<double>(node, "grid_resolution");
+    p.freespace_planner_common_parameters.grid_length_y =
+      get_or_declare_parameter<double>(node, "grid_length_y");
+    p.freespace_planner_common_parameters.grid_length_x =
+      get_or_declare_parameter<double>(node, "grid_length_x");
+    RCLCPP_INFO_STREAM(
+      rclcpp::get_logger("start_planner"),
+      "grid_resolution: " << p.freespace_planner_common_parameters.grid_resolution);
+    RCLCPP_INFO_STREAM(
+      rclcpp::get_logger("start_planner"),
+      "grid_length_y: " << p.freespace_planner_common_parameters.grid_length_y);
+    RCLCPP_INFO_STREAM(
+      rclcpp::get_logger("start_planner"),
+      "grid_length_x: " << p.freespace_planner_common_parameters.grid_length_x);
+    //
+  }
+
   //  freespace planner costmap configs
   {
     const std::string ns = "start_planner.freespace_planner.costmap_configs.";

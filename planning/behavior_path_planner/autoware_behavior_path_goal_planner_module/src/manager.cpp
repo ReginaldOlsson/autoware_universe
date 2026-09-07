@@ -16,7 +16,9 @@
 
 #include "autoware/behavior_path_goal_planner_module/goal_planner_module.hpp"
 #include "autoware/behavior_path_goal_planner_module/goal_planner_parameters.hpp"
-#include "autoware_utils/ros/update_param.hpp"
+
+#include <autoware_utils/ros/parameter.hpp>
+#include <autoware_utils/ros/update_param.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -239,6 +241,24 @@ GoalPlannerParameters GoalPlannerModuleManager::initGoalPlannerParameters(
       node->declare_parameter<double>(ns + "lateral_goal_range");
     p.freespace_parking_common_parameters.longitudinal_goal_range =
       node->declare_parameter<double>(ns + "longitudinal_goal_range");
+  }
+
+  {
+    // Shared with start_planner / costmap_generator; already declared on this node.
+    p.freespace_parking_common_parameters.grid_resolution =
+      autoware_utils::get_or_declare_parameter<double>(*node, "grid_resolution");
+    p.freespace_parking_common_parameters.grid_length_y =
+      autoware_utils::get_or_declare_parameter<double>(*node, "grid_length_y");
+    p.freespace_parking_common_parameters.grid_length_x =
+      autoware_utils::get_or_declare_parameter<double>(*node, "grid_length_x");
+    RCLCPP_INFO_STREAM(
+      node->get_logger(),
+      "grid_resolution: " << p.freespace_parking_common_parameters.grid_resolution);
+    RCLCPP_INFO_STREAM(
+      node->get_logger(), "grid_length_y: " << p.freespace_parking_common_parameters.grid_length_y);
+    RCLCPP_INFO_STREAM(
+      node->get_logger(), "grid_length_x: " << p.freespace_parking_common_parameters.grid_length_x);
+    //
   }
 
   //  freespace parking costmap configs

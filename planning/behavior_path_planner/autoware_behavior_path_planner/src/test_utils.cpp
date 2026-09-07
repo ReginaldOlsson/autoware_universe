@@ -54,6 +54,11 @@ std::shared_ptr<BehaviorPathPlannerNode> generateNode(
 
   std::vector<rclcpp::Parameter> params;
   params.emplace_back("launch_modules", plugin_names);
+  // Shared freespace grid params are loaded onto the BPP node in planning_simulator
+  // (costmap_generator.param.yaml). Node-interface tests must supply them too.
+  params.emplace_back("grid_resolution", 0.3);
+  params.emplace_back("grid_length_x", 30.0);
+  params.emplace_back("grid_length_y", 30.0);
   node_options.parameter_overrides(params);
 
   const auto get_behavior_path_module_config = [](const std::string & module) {
