@@ -1,0 +1,18 @@
+<library path="autoware_fps_view_rviz_plugin">
+  <class
+    name="autoware_fps_view_rviz_plugin/KeyboardFPS"
+    type="autoware::fps_view_rviz_plugin::KeyboardFpsViewController"
+    base_class_type="rviz_common::ViewController">
+    <description>
+      First-person view with WASD keyboard movement, similar to the default FPS view.
+    </description>
+  </class>
+  <class
+    name="autoware_fps_view_rviz_plugin/KeyboardFPSTool"
+    type="autoware::fps_view_rviz_plugin::KeyboardFpsViewTool"
+    base_class_type="rviz_common::Tool">
+    <description>
+      Activates KeyboardFPS and captures WASD keys for camera movement.
+    </description>
+  </class>
+</library>

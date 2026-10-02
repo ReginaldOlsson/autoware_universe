@@ -99,6 +99,21 @@ size_t get_next_target_index(
   return trajectory_size - 1;
 }
 
+namespace
+{
+int edge_gear(const Pose & from, const Pose & to)
+{
+  const double yaw = tf2::getYaw(from.orientation);
+  const double dx = to.position.x - from.position.x;
+  const double dy = to.position.y - from.position.y;
+  if (std::hypot(dx, dy) < 1e-4) {
+    return 0;
+  }
+  const double forward_dot = std::cos(yaw) * dx + std::sin(yaw) * dy;
+  return (forward_dot >= 0.0) ? 1 : -1;
+}
+}  // namespace
+
 Trajectory get_partial_trajectory(
   const Trajectory & trajectory, const size_t start_index, const size_t end_index,
   const rclcpp::Clock::SharedPtr clock)
@@ -112,8 +127,37 @@ Trajectory get_partial_trajectory(
     return partial_trajectory;
   }
 
-  partial_trajectory.points.reserve(end_index - start_index + 1);
-  for (size_t i = start_index; i <= end_index; ++i) {
+  // One gear per partial: skip leading poses whose outgoing edge disagrees
+  // with the rest of the slice (e.g. a forward hook on a reverse partial).
+  size_t start = start_index;
+  int segment_gear = 0;
+  for (size_t i = start; i + 1 < end_index; ++i) {
+    const int g0 = edge_gear(trajectory.points.at(i).pose, trajectory.points.at(i + 1).pose);
+    const int g1 = edge_gear(trajectory.points.at(i + 1).pose, trajectory.points.at(i + 2).pose);
+    if (g0 != 0 && g0 == g1) {
+      segment_gear = g0;
+      break;
+    }
+  }
+  if (segment_gear == 0) {
+    for (size_t i = start; i < end_index; ++i) {
+      const int g = edge_gear(trajectory.points.at(i).pose, trajectory.points.at(i + 1).pose);
+      if (g != 0) {
+        segment_gear = g;
+        break;
+      }
+    }
+  }
+  while (start < end_index && segment_gear != 0) {
+    const int g = edge_gear(trajectory.points.at(start).pose, trajectory.points.at(start + 1).pose);
+    if (g == 0 || g == segment_gear) {
+      break;
+    }
+    ++start;
+  }
+
+  partial_trajectory.points.reserve(end_index - start + 1);
+  for (size_t i = start; i <= end_index; ++i) {
     partial_trajectory.points.push_back(trajectory.points.at(i));
   }
 

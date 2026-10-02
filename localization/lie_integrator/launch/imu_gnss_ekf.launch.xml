@@ -1,0 +1,27 @@
+<launch>
+  <!-- Path A: Pure-IMU twist (ZUPT/NHC) + GNSS pose → autoware_ekf_localizer -->
+  <arg name="input_imu" default="/sensing/imu/imu_data"/>
+  <arg name="input_gnss_pose" default="/sensing/gnss/pose_with_covariance"/>
+  <arg name="input_initial_pose" default="/initialpose3d"/>
+  <arg name="pure_imu_param_file" default="$(find-pkg-share lie_integrator)/config/pure_imu.param.yaml"/>
+  <arg name="ekf_param_file" default="$(find-pkg-share autoware_ekf_localizer)/config/ekf_localizer.param.yaml"/>
+
+  <node pkg="lie_integrator" exec="pure_imu_odometry_node" name="pure_imu_odometry" output="screen">
+    <param from="$(var pure_imu_param_file)"/>
+    <remap from="~/input/imu" to="$(var input_imu)"/>
+    <remap from="~/output/twist_with_covariance" to="/localization/pure_imu/twist_with_covariance"/>
+    <remap from="~/output/debug_pose_with_covariance" to="/localization/pure_imu/debug_pose_with_covariance"/>
+  </node>
+
+  <include file="$(find-pkg-share autoware_ekf_localizer)/launch/ekf_localizer.launch.xml">
+    <arg name="param_file" value="$(var ekf_param_file)"/>
+    <arg name="input_pose_with_cov_name" value="$(var input_gnss_pose)"/>
+    <arg name="input_twist_with_cov_name" value="/localization/pure_imu/twist_with_covariance"/>
+    <arg name="input_initial_pose_name" value="$(var input_initial_pose)"/>
+    <arg name="output_pose_name" value="/localization/ekf_pose"/>
+    <arg name="output_odom_name" value="/localization/ekf_odom"/>
+    <arg name="output_pose_with_covariance_name" value="/localization/ekf_pose_with_covariance"/>
+    <arg name="output_twist_name" value="/localization/ekf_twist"/>
+    <arg name="output_twist_with_covariance_name" value="/localization/ekf_twist_with_covariance"/>
+  </include>
+</launch>

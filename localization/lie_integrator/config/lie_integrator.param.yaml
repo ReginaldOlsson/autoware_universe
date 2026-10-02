@@ -1,0 +1,12 @@
+/**:
+  ros__parameters:
+    map_frame: map_imu
+    base_frame: base_link
+    max_dt: 0.1
+    publish_odometry: true
+    gravity: 9.80665
+    initial_pose:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0

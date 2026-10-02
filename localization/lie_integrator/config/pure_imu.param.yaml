@@ -1,0 +1,16 @@
+/**:
+  ros__parameters:
+    gravity: 9.80665
+    init_seconds: 2.0
+    expected_imu_hz: 200.0
+    zupt_window: 50
+    zupt_gyro_var_thresh: 0.0001
+    zupt_accel_var_thresh: 0.05
+    nhc_lateral_decay: 0.1
+    nhc_vertical_decay: 0.1
+    base_frame: base_link
+    map_frame: map
+    publish_debug_pose: true
+    max_dt: 0.05
+    twist_vx_covariance: 0.1
+    twist_wz_covariance: 0.05

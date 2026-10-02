@@ -1,0 +1,15 @@
+<launch>
+  <arg name="input_imu" default="/boreas/imu"/>
+  <arg name="output_pose" default="/localization/lie_integrator/pose"/>
+  <arg name="output_odometry" default="/localization/lie_integrator/odometry"/>
+  <arg name="output_twist" default="/localization/lie_integrator/twist"/>
+  <arg name="param_file" default="$(find-pkg-share lie_integrator)/config/lie_integrator.param.yaml"/>
+
+  <node pkg="lie_integrator" exec="lie_integrator_node" name="lie_integrator" output="screen">
+    <param from="$(var param_file)"/>
+    <remap from="~/input/imu" to="$(var input_imu)"/>
+    <remap from="~/output/pose" to="$(var output_pose)"/>
+    <remap from="~/output/odometry" to="$(var output_odometry)"/>
+    <remap from="~/output/twist" to="$(var output_twist)"/>
+  </node>
+</launch>
