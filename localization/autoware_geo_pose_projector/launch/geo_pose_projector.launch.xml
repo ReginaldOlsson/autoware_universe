@@ -2,6 +2,7 @@
 <launch>
   <arg name="input_geo_pose" default="/geo_pose_with_covariance"/>
   <arg name="output_pose" default="/pose_with_covariance"/>
+  <arg name="publish_tf" default="true"/>
   <arg name="param_path" default="$(find-pkg-share autoware_geo_pose_projector)/config/geo_pose_projector.param.yaml"/>
 
   <node pkg="autoware_geo_pose_projector" exec="autoware_geo_pose_projector_node" output="both">
@@ -9,5 +10,6 @@
     <remap from="output_pose" to="$(var output_pose)"/>
 
     <param from="$(var param_path)"/>
+    <param name="publish_tf" value="$(var publish_tf)"/>
   </node>
 </launch>
